@@ -27,9 +27,18 @@ app.use("/api/tasks", taskRoutes);
 // app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 
 // NEW - CDN se Swagger UI (Vercel + local dono par kaam karega)
+// Server URL request ke host se set karo taake Swagger same origin par API call kare
 app.get("/api-docs/swagger.json", (req, res) => {
+  const protocol =
+    req.headers["x-forwarded-proto"]?.split(",")[0]?.trim() || req.protocol;
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  const dynamicSpec = {
+    ...swaggerSpec,
+    servers: [{ url: `${protocol}://${host}` }],
+  };
+
   res.setHeader("Content-Type", "application/json");
-  res.send(swaggerSpec);
+  res.send(dynamicSpec);
 });
 
 const swaggerHtml = `<!DOCTYPE html>
