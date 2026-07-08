@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 
-const swaggerUI = require("swagger-ui-express");
+// OLD - Vercel par swagger-ui-express static files kaam nahi karti
+// const swaggerUI = require("swagger-ui-express");
 const swaggerSpec = require("./src/swagger/swagger");
 
 const taskRoutes = require("./src/routes/taskRoutes");
@@ -22,7 +23,54 @@ app.get("/", (req, res) => {
 
 app.use("/api/tasks", taskRoutes);
 
-// Swagger
-app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
+// OLD - Vercel serverless par JS files HTML return karti hain (SwaggerUIBundle error)
+// app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
+
+// NEW - CDN se Swagger UI (Vercel + local dono par kaam karega)
+app.get("/api-docs/swagger.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
+
+const swaggerHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Task API - Swagger UI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
+  <style>
+    html { box-sizing: border-box; overflow-y: scroll; }
+    *, *:before, *:after { box-sizing: inherit; }
+    body { margin: 0; background: #fafafa; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.onload = function () {
+      window.ui = SwaggerUIBundle({
+        url: "/api-docs/swagger.json",
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+        plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+        layout: "StandaloneLayout",
+      });
+    };
+  </script>
+</body>
+</html>`;
+
+app.get("/api-docs", (req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.send(swaggerHtml);
+});
+
+app.get("/api-docs/", (req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.send(swaggerHtml);
+});
 
 module.exports = app;
